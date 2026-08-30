@@ -31,11 +31,12 @@ CREATE FILE FORMAT IF NOT EXISTS RAW.FF_JSON_STANDARD
    is pasted into the S3 bucket policy trust relationship. Chicken-and-egg
    two-step setup - standard Snowflake<->AWS pattern.
    ========================================================================== */
+/*
 CREATE STORAGE INTEGRATION IF NOT EXISTS S3_RUNNINGTELCO_INT
   TYPE = EXTERNAL_STAGE
   STORAGE_PROVIDER = 'S3'
   ENABLED = TRUE
-  STORAGE_AWS_ROLE_ARN = 'arn:aws:iam::<AWS_ACCOUNT_ID>:role/snowflake-runningtelco-s3-role'
+  STORAGE_AWS_ROLE_ARN = 'arn:aws:iam::1087-8209-1836:role/snowflake-runningtelco-s3-role'
   STORAGE_ALLOWED_LOCATIONS = (
       's3://running-telco-raw/customers/',
       's3://running-telco-raw/plans/',
@@ -47,8 +48,11 @@ CREATE STORAGE INTEGRATION IF NOT EXISTS S3_RUNNINGTELCO_INT
       's3://running-telco-raw/support_tickets/'
   )
   COMMENT = 'Storage integration for Running Telco raw S3 landing bucket';
+  */
 
 -- DESC INTEGRATION S3_RUNNINGTELCO_INT;  -- copy STORAGE_AWS_IAM_USER_ARN + STORAGE_AWS_EXTERNAL_ID into AWS trust policy
+
+grant usage on integrantion S3_RUNNINGTELCO_INT to role R_DATA_ENGINEER;
 
 /* ==========================================================================
    EXTERNAL STAGES

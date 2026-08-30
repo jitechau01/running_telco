@@ -2,3 +2,4 @@ snowflake-connector-python[secure-local-storage]==3.12.3
 boto3==1.35.36
 Faker==30.8.2
 python-dotenv==1.0.1
+snowflake-cli
