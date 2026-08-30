@@ -1,0 +1,86 @@
+name: Deploy
+
+# Runs on every push to main (i.e. after a PR is merged). Two independent
+# jobs:
+#   1. deploy-snowflake   - applies every sql/ file to the Snowflake account
+#   2. sync-airflow-to-s3 - copies airflow/dags/ and python/requirements.txt
+#                           to the S3 bucket that Amazon MWAA (Managed
+#                           Workflows for Apache Airflow) watches. This is
+#                           the real-world pattern: you don't SSH into an
+#                           Airflow box and copy files - MWAA (and most
+#                           self-hosted setups that use an S3-sync sidecar)
+#                           expects DAGs and requirements.txt to live in a
+#                           specific S3 prefix structure, and picks up
+#                           changes automatically within a few minutes.
+#
+# Both jobs authenticate to AWS via OpenID Connect (OIDC) - no long-lived
+# AWS access keys are stored in GitHub at all. See docs/DEVELOPER_ONBOARDING.md
+# section 6 for the one-time AWS IAM setup this depends on.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "sql/**"
+      - "airflow/dags/**"
+      - "python/requirements.txt"
+
+permissions:
+  id-token: write   # required for AWS OIDC
+  contents: read
+
+jobs:
+  deploy-snowflake:
+    runs-on: ubuntu-latest
+    if: contains(github.event.head_commit.modified, 'sql/') || contains(github.event.head_commit.added, 'sql/')
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: pip install --quiet snowflake-connector-python
+
+      - name: Deploy SQL to Snowflake
+        env:
+          SNOWFLAKE_ACCOUNT: ${{ secrets.SNOWFLAKE_ACCOUNT }}
+          SNOWFLAKE_USER: ${{ secrets.SNOWFLAKE_CI_USER }}
+          SNOWFLAKE_ROLE: ${{ secrets.SNOWFLAKE_CI_ROLE }}
+          SNOWFLAKE_WAREHOUSE: ${{ secrets.SNOWFLAKE_WAREHOUSE }}
+          SNOWFLAKE_PRIVATE_KEY: ${{ secrets.SNOWFLAKE_CI_PRIVATE_KEY }}
+        run: python ci/deploy_snowflake.py
+
+  sync-airflow-to-s3:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials (OIDC - no static keys)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Sync Airflow DAGs to MWAA bucket
+        run: |
+          aws s3 sync airflow/dags/ "s3://${{ secrets.MWAA_BUCKET_NAME }}/dags/" \
+            --delete \
+            --exclude "*.pyc" \
+            --exclude "__pycache__/*"
+
+      - name: Upload requirements.txt to MWAA bucket
+        run: |
+          aws s3 cp python/requirements.txt "s3://${{ secrets.MWAA_BUCKET_NAME }}/requirements.txt"
+
+      - name: Trigger MWAA to pick up changes (optional - MWAA also polls automatically)
+        run: |
+          echo "MWAA polls its S3 bucket automatically (usually within a few minutes)."
+          echo "To force an immediate refresh instead of waiting, update the MWAA"
+          echo "environment's requirements.txt S3 object version via the AWS CLI/console,"
+          echo "which triggers MWAA to rebuild its environment - see AWS MWAA docs for"
+          echo "'startup script' and 'requirements.txt version' if you need this in CI."

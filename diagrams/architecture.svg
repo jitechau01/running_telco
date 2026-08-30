@@ -1,0 +1,177 @@
+<svg viewBox="0 0 1500 980" xmlns="http://www.w3.org/2000/svg" font-family="Helvetica, Arial, sans-serif">
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L0,6 L9,3 z" fill="#4a5568"/>
+    </marker>
+  </defs>
+
+  <rect width="1500" height="980" fill="#f7f8fa"/>
+  <text x="750" y="36" text-anchor="middle" font-size="24" font-weight="700" fill="#1a202c">Running Telco — Snowflake + AWS End-to-End Architecture</text>
+
+  <!-- AWS Zone -->
+  <rect x="30" y="70" width="260" height="860" rx="10" fill="#fff3e0" stroke="#e8850c" stroke-width="1.5"/>
+  <text x="160" y="96" text-anchor="middle" font-size="15" font-weight="700" fill="#c05e00">AWS</text>
+
+  <rect x="55" y="120" width="210" height="70" rx="6" fill="#fff" stroke="#e8850c"/>
+  <text x="160" y="145" text-anchor="middle" font-size="12" font-weight="600">S3: running-telco-raw</text>
+  <text x="160" y="163" text-anchor="middle" font-size="10" fill="#555">customers/ plans/ devices/ cdr/</text>
+  <text x="160" y="178" text-anchor="middle" font-size="10" fill="#555">billing/ payments/ towers/ tickets/</text>
+
+  <rect x="55" y="220" width="210" height="60" rx="6" fill="#fff" stroke="#e8850c"/>
+  <text x="160" y="245" text-anchor="middle" font-size="12" font-weight="600">S3 Event Notification</text>
+  <text x="160" y="262" text-anchor="middle" font-size="10" fill="#555">-&gt; SQS -&gt; Snowpipe (CDR)</text>
+
+  <rect x="55" y="310" width="210" height="90" rx="6" fill="#fff" stroke="#e8850c"/>
+  <text x="160" y="332" text-anchor="middle" font-size="12" font-weight="600">IAM Role</text>
+  <text x="160" y="350" text-anchor="middle" font-size="10" fill="#555">snowflake-runningtelco-s3-role</text>
+  <text x="160" y="366" text-anchor="middle" font-size="10" fill="#555">trust: Snowflake storage</text>
+  <text x="160" y="381" text-anchor="middle" font-size="10" fill="#555">integration external ID</text>
+
+  <rect x="55" y="430" width="210" height="130" rx="6" fill="#fff" stroke="#e8850c"/>
+  <text x="160" y="452" text-anchor="middle" font-size="12" font-weight="600">Python Orchestrator</text>
+  <text x="160" y="470" text-anchor="middle" font-size="10" fill="#555">generate_telecom_data.py</text>
+  <text x="160" y="486" text-anchor="middle" font-size="10" fill="#555">upload_to_s3.py</text>
+  <text x="160" y="502" text-anchor="middle" font-size="10" fill="#555">snowflake_orchestrator.py</text>
+  <text x="160" y="518" text-anchor="middle" font-size="10" fill="#555">--layer raw|staging|curated</text>
+  <text x="160" y="534" text-anchor="middle" font-size="10" fill="#555">(retry + audit logging)</text>
+
+  <rect x="55" y="580" width="210" height="70" rx="6" fill="#fff" stroke="#e8850c"/>
+  <text x="160" y="605" text-anchor="middle" font-size="12" font-weight="600">Orchestration trigger</text>
+  <text x="160" y="623" text-anchor="middle" font-size="10" fill="#555">Airflow DAG / cron</text>
+
+  <!-- Snowflake Zone -->
+  <rect x="320" y="70" width="850" height="860" rx="10" fill="#e6f2ff" stroke="#1565c0" stroke-width="1.5"/>
+  <text x="745" y="96" text-anchor="middle" font-size="15" font-weight="700" fill="#0d47a1">SNOWFLAKE — Database: RUNNING_TELCO</text>
+
+  <!-- Stages/Pipe -->
+  <rect x="345" y="120" width="230" height="70" rx="6" fill="#fff" stroke="#1565c0"/>
+  <text x="460" y="143" text-anchor="middle" font-size="12" font-weight="600">External Stages + Pipe</text>
+  <text x="460" y="160" text-anchor="middle" font-size="10" fill="#555">STORAGE INTEGRATION</text>
+  <text x="460" y="175" text-anchor="middle" font-size="10" fill="#555">PIPE_CDR (auto-ingest)</text>
+
+  <!-- RAW -->
+  <rect x="345" y="220" width="230" height="90" rx="6" fill="#fff" stroke="#1565c0"/>
+  <text x="460" y="242" text-anchor="middle" font-size="12" font-weight="700">RAW schema</text>
+  <text x="460" y="260" text-anchor="middle" font-size="10" fill="#555">RAW_CUSTOMERS, RAW_CDR,</text>
+  <text x="460" y="275" text-anchor="middle" font-size="10" fill="#555">RAW_BILLING, RAW_PAYMENTS,</text>
+  <text x="460" y="290" text-anchor="middle" font-size="10" fill="#555">RAW_PLANS, RAW_DEVICES,</text>
+  <text x="460" y="303" text-anchor="middle" font-size="10" fill="#555">RAW_TOWERS, RAW_SUPPORT_TICKETS</text>
+
+  <!-- STAGING -->
+  <rect x="345" y="345" width="230" height="100" rx="6" fill="#fff" stroke="#1565c0"/>
+  <text x="460" y="367" text-anchor="middle" font-size="12" font-weight="700">STAGING schema</text>
+  <text x="460" y="384" text-anchor="middle" font-size="10" fill="#555">SP_LOAD_STG_* procedures</text>
+  <text x="460" y="399" text-anchor="middle" font-size="10" fill="#555">(typed MERGE / dedupe)</text>
+  <text x="460" y="416" text-anchor="middle" font-size="10" font-weight="600" fill="#0d47a1">STREAMS: STRM_CUSTOMERS,</text>
+  <text x="460" y="431" text-anchor="middle" font-size="10" font-weight="600" fill="#0d47a1">STRM_CDR, STRM_BILLING ...</text>
+
+  <!-- ORCHESTRATION (tasks) -->
+  <rect x="345" y="470" width="230" height="70" rx="6" fill="#dff0d8" stroke="#3c763d"/>
+  <text x="460" y="490" text-anchor="middle" font-size="11" font-weight="700" fill="#2e5a2e">ORCHESTRATION schema</text>
+  <text x="460" y="505" text-anchor="middle" font-size="10" fill="#2e5a2e">TASKS (cron + AFTER +</text>
+  <text x="460" y="519" text-anchor="middle" font-size="10" fill="#2e5a2e">SYSTEM$STREAM_HAS_DATA)</text>
+  <text x="460" y="533" text-anchor="middle" font-size="9" font-style="italic" fill="#2e5a2e">all tasks share one schema</text>
+
+  <!-- CURATED -->
+  <rect x="345" y="565" width="230" height="110" rx="6" fill="#fff" stroke="#1565c0"/>
+  <text x="460" y="587" text-anchor="middle" font-size="12" font-weight="700">CURATED schema</text>
+  <text x="460" y="604" text-anchor="middle" font-size="10" fill="#555">DIM_CUSTOMER (SCD2), DIM_PLAN,</text>
+  <text x="460" y="619" text-anchor="middle" font-size="10" fill="#555">DIM_DEVICE, DIM_TOWER</text>
+  <text x="460" y="634" text-anchor="middle" font-size="10" fill="#555">FACT_CDR_USAGE, FACT_BILLING,</text>
+  <text x="460" y="649" text-anchor="middle" font-size="10" fill="#555">FACT_PAYMENTS, FACT_SUPPORT_TICKETS</text>
+  <text x="460" y="665" text-anchor="middle" font-size="10" fill="#555">SP_MERGE_* procedures</text>
+
+  <!-- GOVERNANCE -->
+  <rect x="345" y="700" width="230" height="120" rx="6" fill="#fff" stroke="#1565c0"/>
+  <text x="460" y="722" text-anchor="middle" font-size="12" font-weight="700">GOVERNANCE schema</text>
+  <text x="460" y="739" text-anchor="middle" font-size="10" fill="#555">TAGS: DATA_CLASSIFICATION,</text>
+  <text x="460" y="753" text-anchor="middle" font-size="10" fill="#555">PII_CATEGORY, COST_CENTER</text>
+  <text x="460" y="769" text-anchor="middle" font-size="10" fill="#555">MASKING POLICIES (email, phone,</text>
+  <text x="460" y="783" text-anchor="middle" font-size="10" fill="#555">national_id, DOB, card, currency)</text>
+  <text x="460" y="799" text-anchor="middle" font-size="10" fill="#555">ROW ACCESS POLICY: region</text>
+  <text x="460" y="813" text-anchor="middle" font-size="10" fill="#555">RBAC: 7 functional roles</text>
+
+  <!-- SHARE_OUT -->
+  <rect x="620" y="565" width="230" height="90" rx="6" fill="#fff" stroke="#1565c0"/>
+  <text x="735" y="587" text-anchor="middle" font-size="12" font-weight="700">SHARE_OUT schema</text>
+  <text x="735" y="604" text-anchor="middle" font-size="10" fill="#555">Secure views (aggregated,</text>
+  <text x="735" y="619" text-anchor="middle" font-size="10" fill="#555">non-PII regional KPIs)</text>
+  <text x="735" y="635" text-anchor="middle" font-size="10" fill="#555">SHARE SHR_RUNNINGTELCO_PARTNER</text>
+  <text x="735" y="649" text-anchor="middle" font-size="10" fill="#555">-&gt; external partner account</text>
+
+  <!-- AUDIT_CTL -->
+  <rect x="620" y="220" width="230" height="225" rx="6" fill="#fdf2e9" stroke="#b45309" stroke-width="1.5"/>
+  <text x="735" y="245" text-anchor="middle" font-size="12" font-weight="700" fill="#8a4400">AUDIT_CTL schema</text>
+  <text x="735" y="264" text-anchor="middle" font-size="10" fill="#5c4033">ETL_JOB_MASTER</text>
+  <text x="735" y="280" text-anchor="middle" font-size="10" fill="#5c4033">ETL_RUN_LOG (start/end/rows/status)</text>
+  <text x="735" y="296" text-anchor="middle" font-size="10" fill="#5c4033">ETL_ERROR_LOG (failure capture)</text>
+  <text x="735" y="312" text-anchor="middle" font-size="10" fill="#5c4033">DQ_CHECK_LOG</text>
+  <text x="735" y="332" text-anchor="middle" font-size="10" font-weight="600" fill="#8a4400">SP_AUDIT_START / END / FAIL</text>
+  <text x="735" y="348" text-anchor="middle" font-size="10" font-weight="600" fill="#8a4400">SP_LOG_DQ_CHECK</text>
+  <text x="735" y="368" text-anchor="middle" font-size="10" fill="#5c4033">VW_DAILY_RUN_STATS</text>
+  <text x="735" y="384" text-anchor="middle" font-size="10" fill="#5c4033">VW_LATEST_RUN_STATUS</text>
+  <text x="735" y="400" text-anchor="middle" font-size="10" fill="#5c4033">VW_OPEN_ERRORS</text>
+  <text x="735" y="420" text-anchor="middle" font-size="9" font-style="italic" fill="#8a4400">called from every RAW/STAGING/</text>
+  <text x="735" y="433" text-anchor="middle" font-size="9" font-style="italic" fill="#8a4400">CURATED procedure + Python</text>
+
+  <!-- Consumers Zone -->
+  <rect x="1200" y="70" width="270" height="860" rx="10" fill="#f3e8fd" stroke="#7b2ff7" stroke-width="1.5"/>
+  <text x="1335" y="96" text-anchor="middle" font-size="15" font-weight="700" fill="#5a1fb0">CONSUMERS</text>
+
+  <rect x="1225" y="130" width="220" height="90" rx="6" fill="#fff" stroke="#7b2ff7"/>
+  <text x="1335" y="155" text-anchor="middle" font-size="12" font-weight="600">R_ANALYST_NORTH / SOUTH</text>
+  <text x="1335" y="172" text-anchor="middle" font-size="10" fill="#555">region-restricted (row policy)</text>
+  <text x="1335" y="187" text-anchor="middle" font-size="10" fill="#555">masked PII (masking policy)</text>
+  <text x="1335" y="202" text-anchor="middle" font-size="10" fill="#555">via WH_BI</text>
+
+  <rect x="1225" y="240" width="220" height="70" rx="6" fill="#fff" stroke="#7b2ff7"/>
+  <text x="1335" y="263" text-anchor="middle" font-size="12" font-weight="600">R_ANALYST_GLOBAL</text>
+  <text x="1335" y="280" text-anchor="middle" font-size="10" fill="#555">all regions, masked PII</text>
+  <text x="1335" y="295" text-anchor="middle" font-size="10" fill="#555">BI dashboards</text>
+
+  <rect x="1225" y="330" width="220" height="70" rx="6" fill="#fff" stroke="#7b2ff7"/>
+  <text x="1335" y="353" text-anchor="middle" font-size="12" font-weight="600">R_COMPLIANCE_OFFICER</text>
+  <text x="1335" y="370" text-anchor="middle" font-size="10" fill="#555">unmasked PII, all regions</text>
+  <text x="1335" y="385" text-anchor="middle" font-size="10" fill="#555">audit / regulatory use</text>
+
+  <rect x="1225" y="420" width="220" height="90" rx="6" fill="#fff" stroke="#7b2ff7"/>
+  <text x="1335" y="443" text-anchor="middle" font-size="12" font-weight="600">External Partner Account</text>
+  <text x="1335" y="460" text-anchor="middle" font-size="10" fill="#555">consumes SHR_RUNNINGTELCO_</text>
+  <text x="1335" y="475" text-anchor="middle" font-size="10" fill="#555">PARTNER_ANALYTICS share</text>
+  <text x="1335" y="490" text-anchor="middle" font-size="10" fill="#555">(zero-copy, no compute given)</text>
+
+  <!-- Arrows -->
+  <path d="M265,155 L345,155" stroke="#4a5568" stroke-width="2" fill="none" marker-end="url(#arrow)"/>
+  <path d="M265,250 L345,190" stroke="#4a5568" stroke-width="2" fill="none" marker-end="url(#arrow)"/>
+  <path d="M460,190 L460,220" stroke="#4a5568" stroke-width="2" fill="none" marker-end="url(#arrow)"/>
+  <path d="M460,310 L460,345" stroke="#4a5568" stroke-width="2" fill="none" marker-end="url(#arrow)"/>
+  <path d="M460,445 L460,470" stroke="#4a5568" stroke-width="2" fill="none" marker-end="url(#arrow)"/>
+  <path d="M460,540 L460,565" stroke="#4a5568" stroke-width="2" fill="none" marker-end="url(#arrow)"/>
+  <path d="M460,675 L460,700" stroke="#4a5568" stroke-width="2" fill="none" marker-end="url(#arrow)"/>
+  <path d="M575,610 L620,610" stroke="#4a5568" stroke-width="2" fill="none" marker-end="url(#arrow)"/>
+  <path d="M265,495 Q305,340 345,270" stroke="#4a5568" stroke-width="2" fill="none" marker-end="url(#arrow)" stroke-dasharray="4,3"/>
+
+  <path d="M850,610 Q1000,610 1225,470" stroke="#7b2ff7" stroke-width="2" fill="none" marker-end="url(#arrow)"/>
+  <path d="M575,790 L1225,180" stroke="#7b2ff7" stroke-width="1.5" fill="none" marker-end="url(#arrow)" stroke-dasharray="3,3" opacity="0.55"/>
+  <path d="M575,615 L1225,265" stroke="#7b2ff7" stroke-width="1.5" fill="none" marker-end="url(#arrow)" stroke-dasharray="3,3" opacity="0.55"/>
+  <path d="M575,615 L1225,360" stroke="#7b2ff7" stroke-width="1.5" fill="none" marker-end="url(#arrow)" stroke-dasharray="3,3" opacity="0.55"/>
+
+  <path d="M735,445 L735,470" stroke="#b45309" stroke-width="1.5" fill="none" stroke-dasharray="3,3" opacity="0.5"/>
+  <path d="M620,330 L575,300" stroke="#b45309" stroke-width="1.5" fill="none" marker-end="url(#arrow)" stroke-dasharray="3,3" opacity="0.6"/>
+  <path d="M620,330 L575,400" stroke="#b45309" stroke-width="1.5" fill="none" marker-end="url(#arrow)" stroke-dasharray="3,3" opacity="0.6"/>
+  <path d="M620,330 L575,615" stroke="#b45309" stroke-width="1.5" fill="none" marker-end="url(#arrow)" stroke-dasharray="3,3" opacity="0.6"/>
+
+  <!-- Legend -->
+  <rect x="55" y="700" width="210" height="130" rx="6" fill="#fff" stroke="#999"/>
+  <text x="65" y="720" font-size="11" font-weight="700" fill="#333">Legend</text>
+  <line x1="65" y1="732" x2="95" y2="732" stroke="#4a5568" stroke-width="2" marker-end="url(#arrow)"/>
+  <text x="100" y="736" font-size="9" fill="#333">data flow (pipeline)</text>
+  <line x1="65" y1="750" x2="95" y2="750" stroke="#7b2ff7" stroke-width="2" marker-end="url(#arrow)"/>
+  <text x="100" y="754" font-size="9" fill="#333">query / share access</text>
+  <line x1="65" y1="768" x2="95" y2="768" stroke="#b45309" stroke-width="1.5" stroke-dasharray="3,3"/>
+  <text x="100" y="772" font-size="9" fill="#333">audit logging calls</text>
+  <text x="65" y="790" font-size="9" fill="#333">Solid boxes = Snowflake objects</text>
+  <text x="65" y="804" font-size="9" fill="#333">this repo creates/deploys</text>
+
+  <text x="750" y="960" text-anchor="middle" font-size="10" fill="#888">RAW -&gt; STAGING -&gt; CURATED, each hop CDC-driven via STREAM + TASK; every hop audited in AUDIT_CTL regardless of Python or Task origin</text>
+</svg>

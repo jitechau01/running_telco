@@ -1,0 +1,43 @@
+name: CI
+
+# Runs on every pull request into main. No Snowflake/AWS credentials are
+# used here at all - these are pure static checks, so a PR from anyone
+# (including a first-time contributor with no secrets access) can be
+# validated before a reviewer even looks at it.
+
+on:
+  pull_request:
+    branches: [main]
+
+jobs:
+  lint-and-regression-checks:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Run lint + regression checks
+        run: bash ci/lint_checks.sh
+
+      - name: Validate Airflow DAG parses (structure only, no live connection)
+        run: |
+          pip install --quiet "apache-airflow==2.9.3" \
+            --constraint "https://raw.githubusercontent.com/apache/airflow/constraints-2.9.3/constraints-3.12.txt"
+          python - << 'EOF'
+          from unittest.mock import patch
+          def fake_get(key, default_var=None):
+              return default_var
+          with patch("airflow.models.Variable.get", side_effect=fake_get):
+              import importlib.util
+              spec = importlib.util.spec_from_file_location(
+                  "dag", "airflow/dags/running_telco_pipeline_dag.py")
+              mod = importlib.util.module_from_spec(spec)
+              spec.loader.exec_module(mod)
+              assert len(mod.dag.tasks) == 5, f"expected 5 tasks, got {len(mod.dag.tasks)}"
+              print("DAG parses correctly:", [t.task_id for t in mod.dag.topological_sort()])
+          EOF
