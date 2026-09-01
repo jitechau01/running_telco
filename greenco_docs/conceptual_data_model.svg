@@ -1,0 +1,89 @@
+<svg viewBox="0 0 1300 850" xmlns="http://www.w3.org/2000/svg" font-family="Helvetica, Arial, sans-serif">
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L0,6 L9,3 z" fill="#37474f"/>
+    </marker>
+  </defs>
+  <rect width="1300" height="850" fill="#fafafa"/>
+  <text x="650" y="36" text-anchor="middle" font-size="22" font-weight="700" fill="#1a237e">Running Telco — Conceptual Data Model</text>
+  <text x="650" y="58" text-anchor="middle" font-size="12" fill="#666">Business entities and relationships — no attributes, no technology</text>
+
+  <!-- CUSTOMER (center) -->
+  <ellipse cx="650" cy="420" rx="110" ry="55" fill="#c8e6c9" stroke="#2e7d32" stroke-width="2"/>
+  <text x="650" y="426" text-anchor="middle" font-size="16" font-weight="700" fill="#1b5e20">CUSTOMER</text>
+
+  <!-- PLAN -->
+  <ellipse cx="650" cy="150" rx="100" ry="50" fill="#bbdefb" stroke="#1565c0" stroke-width="2"/>
+  <text x="650" y="156" text-anchor="middle" font-size="15" font-weight="700" fill="#0d47a1">PLAN</text>
+
+  <!-- DEVICE -->
+  <ellipse cx="950" cy="250" rx="100" ry="50" fill="#bbdefb" stroke="#1565c0" stroke-width="2"/>
+  <text x="950" y="256" text-anchor="middle" font-size="15" font-weight="700" fill="#0d47a1">DEVICE</text>
+
+  <!-- USAGE (CDR) -->
+  <ellipse cx="1080" cy="480" rx="110" ry="55" fill="#ffe0b2" stroke="#e65100" stroke-width="2"/>
+  <text x="1080" y="475" text-anchor="middle" font-size="15" font-weight="700" fill="#bf360c">USAGE</text>
+  <text x="1080" y="493" text-anchor="middle" font-size="11" fill="#bf360c">(Call / SMS / Data Session)</text>
+
+  <!-- NETWORK TOWER -->
+  <ellipse cx="1080" cy="680" rx="110" ry="50" fill="#bbdefb" stroke="#1565c0" stroke-width="2"/>
+  <text x="1080" y="686" text-anchor="middle" font-size="15" font-weight="700" fill="#0d47a1">NETWORK TOWER</text>
+
+  <!-- INVOICE -->
+  <ellipse cx="350" cy="600" rx="100" ry="50" fill="#ffe0b2" stroke="#e65100" stroke-width="2"/>
+  <text x="350" y="606" text-anchor="middle" font-size="15" font-weight="700" fill="#bf360c">INVOICE</text>
+
+  <!-- PAYMENT -->
+  <ellipse cx="150" cy="420" rx="100" ry="50" fill="#ffe0b2" stroke="#e65100" stroke-width="2"/>
+  <text x="150" y="426" text-anchor="middle" font-size="15" font-weight="700" fill="#bf360c">PAYMENT</text>
+
+  <!-- SUPPORT TICKET -->
+  <ellipse cx="350" cy="240" rx="110" ry="50" fill="#ffe0b2" stroke="#e65100" stroke-width="2"/>
+  <text x="350" y="246" text-anchor="middle" font-size="15" font-weight="700" fill="#bf360c">SUPPORT TICKET</text>
+
+  <!-- Relationships -->
+  <line x1="650" y1="200" x2="650" y2="365" stroke="#37474f" stroke-width="1.8" marker-end="url(#arrow)"/>
+  <text x="700" y="280" font-size="11" fill="#333">is subscribed to</text>
+  <text x="590" y="200" font-size="10" fill="#777">1</text>
+  <text x="590" y="360" font-size="10" fill="#777">M</text>
+
+  <line x1="750" y1="270" x2="880" y2="255" stroke="#37474f" stroke-width="1.8" marker-end="url(#arrow)"/>
+  <text x="770" y="245" font-size="11" fill="#333">owns</text>
+  <text x="755" y="285" font-size="10" fill="#777">1</text>
+  <text x="865" y="245" font-size="10" fill="#777">M</text>
+
+  <line x1="745" y1="440" x2="985" y2="470" stroke="#37474f" stroke-width="1.8" marker-end="url(#arrow)"/>
+  <text x="850" y="440" font-size="11" fill="#333">generates</text>
+  <text x="755" y="455" font-size="10" fill="#777">1</text>
+  <text x="965" y="465" font-size="10" fill="#777">M</text>
+
+  <line x1="1080" y1="535" x2="1080" y2="630" stroke="#37474f" stroke-width="1.8" marker-end="url(#arrow)"/>
+  <text x="1000" y="590" font-size="11" fill="#333">occurs at</text>
+  <text x="1095" y="550" font-size="10" fill="#777">M</text>
+  <text x="1095" y="625" font-size="10" fill="#777">1</text>
+
+  <line x1="580" y1="465" x2="410" y2="575" stroke="#37474f" stroke-width="1.8" marker-end="url(#arrow)"/>
+  <text x="460" y="530" font-size="11" fill="#333">is billed via</text>
+  <text x="565" y="480" font-size="10" fill="#777">1</text>
+  <text x="420" y="565" font-size="10" fill="#777">M</text>
+
+  <line x1="260" y1="580" x2="215" y2="450" stroke="#37474f" stroke-width="1.8" marker-end="url(#arrow)"/>
+  <text x="200" y="520" font-size="11" fill="#333">is settled by</text>
+  <text x="255" y="565" font-size="10" fill="#777">1</text>
+  <text x="220" y="460" font-size="10" fill="#777">M</text>
+
+  <line x1="580" y1="390" x2="420" y2="270" stroke="#37474f" stroke-width="1.8" marker-end="url(#arrow)"/>
+  <text x="465" y="345" font-size="11" fill="#333">raises</text>
+  <text x="565" y="400" font-size="10" fill="#777">1</text>
+  <text x="430" y="280" font-size="10" fill="#777">M</text>
+
+  <!-- Legend -->
+  <rect x="40" y="740" width="1220" height="80" rx="8" fill="#fff" stroke="#ccc"/>
+  <ellipse cx="90" cy="765" rx="30" ry="15" fill="#c8e6c9" stroke="#2e7d32" stroke-width="1.5"/>
+  <text x="140" y="770" font-size="11" fill="#333">Core party entity (Customer)</text>
+  <ellipse cx="90" cy="795" rx="30" ry="15" fill="#bbdefb" stroke="#1565c0" stroke-width="1.5"/>
+  <text x="140" y="800" font-size="11" fill="#333">Reference / catalog entity (Plan, Device, Network Tower)</text>
+  <ellipse cx="480" cy="765" rx="30" ry="15" fill="#ffe0b2" stroke="#e65100" stroke-width="1.5"/>
+  <text x="530" y="770" font-size="11" fill="#333">Business event / transaction entity (Usage, Invoice, Payment, Support Ticket)</text>
+  <text x="480" y="800" font-size="11" fill="#555">1 / M labels denote cardinality (one-to-many) of each relationship</text>
+</svg>
