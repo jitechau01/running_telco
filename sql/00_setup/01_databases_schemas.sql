@@ -10,6 +10,10 @@
      ORCHESTRATION -> all TASK objects (must share one schema per DAG - see below)
      GOVERNANCE    -> tag definitions, masking policies, row access policies
      SHARE_OUT     -> secure views exposed via Snowflake Secure Data Sharing
+     ERROR_SCHEMA  -> RAW-layer data-quality validation: rule-level pass/fail
+                      summary, source-file-vs-table row count reconciliation,
+                      and the individual failing records themselves (see
+                      sql/09_validation/)
    ========================================================================== */
 
 CREATE DATABASE IF NOT EXISTS RUNNING_TELCO
@@ -38,4 +42,7 @@ CREATE SCHEMA IF NOT EXISTS GOVERNANCE
 
 CREATE SCHEMA IF NOT EXISTS SHARE_OUT
   COMMENT = 'Secure views published to external consumers via Data Sharing';
+
+CREATE SCHEMA IF NOT EXISTS ERROR_SCHEMA
+  COMMENT = 'RAW-layer data quality validation: pass/fail rule summary, source-file-vs-table row count reconciliation, and the individual records that failed validation (not-null, date format, accepted values, etc)';
 

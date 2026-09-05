@@ -47,6 +47,7 @@ class S3Config:
 FEED_REGISTRY = {
     "customers": {
         "raw_table": "RAW.RAW_CUSTOMERS", "proc": "STAGING.SP_LOAD_STG_CUSTOMERS",
+        "validate_proc": "ERROR_SCHEMA.SP_VALIDATE_RAW_CUSTOMERS",
         "job_name": "RAW_TO_STAGING_CUSTOMERS",
         "columns": ["customer_id", "first_name", "last_name", "date_of_birth", "national_id",
                     "email", "phone_number", "address_line1", "city", "region", "postal_code",
@@ -54,18 +55,21 @@ FEED_REGISTRY = {
     },
     "plans": {
         "raw_table": "RAW.RAW_PLANS", "proc": "STAGING.SP_LOAD_STG_PLANS",
+        "validate_proc": "ERROR_SCHEMA.SP_VALIDATE_RAW_PLANS",
         "job_name": "RAW_TO_STAGING_PLANS",
         "columns": ["plan_id", "plan_name", "plan_type", "monthly_fee", "data_limit_gb",
                     "voice_minutes", "sms_count", "currency", "effective_date"],
     },
     "devices": {
         "raw_table": "RAW.RAW_DEVICES", "proc": "STAGING.SP_LOAD_STG_DEVICES",
+        "validate_proc": "ERROR_SCHEMA.SP_VALIDATE_RAW_DEVICES",
         "job_name": "RAW_TO_STAGING_DEVICES",
         "columns": ["device_id", "imei", "customer_id", "device_model", "device_os",
                     "activation_date", "device_status"],
     },
     "cdr": {
         "raw_table": "RAW.RAW_CDR", "proc": "STAGING.SP_LOAD_STG_CDR",
+        "validate_proc": "ERROR_SCHEMA.SP_VALIDATE_RAW_CDR",
         "job_name": "RAW_TO_STAGING_CDR",
         "columns": ["cdr_id", "customer_id", "call_type", "origin_number", "destination_number",
                     "cell_tower_id", "call_start_ts", "call_end_ts", "duration_seconds",
@@ -73,23 +77,27 @@ FEED_REGISTRY = {
     },
     "billing": {
         "raw_table": "RAW.RAW_BILLING", "proc": "STAGING.SP_LOAD_STG_BILLING",
+        "validate_proc": "ERROR_SCHEMA.SP_VALIDATE_RAW_BILLING",
         "job_name": "RAW_TO_STAGING_BILLING",
         "columns": ["invoice_id", "customer_id", "billing_period", "plan_id", "usage_charges",
                     "tax_amount", "total_amount", "invoice_date", "due_date", "invoice_status"],
     },
     "payments": {
         "raw_table": "RAW.RAW_PAYMENTS", "proc": "STAGING.SP_LOAD_STG_PAYMENTS",
+        "validate_proc": "ERROR_SCHEMA.SP_VALIDATE_RAW_PAYMENTS",
         "job_name": "RAW_TO_STAGING_PAYMENTS",
         "columns": ["payment_id", "invoice_id", "customer_id", "payment_date", "amount",
                     "payment_method", "card_last4", "payment_status"],
     },
     "towers": {
         "raw_table": "RAW.RAW_TOWERS", "proc": "STAGING.SP_LOAD_STG_TOWERS",
+        "validate_proc": "ERROR_SCHEMA.SP_VALIDATE_RAW_TOWERS",
         "job_name": "RAW_TO_STAGING_TOWERS",
         "columns": ["tower_id", "region", "latitude", "longitude", "capacity_mbps", "tower_status"],
     },
     "support_tickets": {
         "raw_table": "RAW.RAW_SUPPORT_TICKETS", "proc": "STAGING.SP_LOAD_STG_SUPPORT_TICKETS",
+        "validate_proc": "ERROR_SCHEMA.SP_VALIDATE_RAW_SUPPORT_TICKETS",
         "job_name": "RAW_TO_STAGING_SUPPORT_TICKETS",
         "columns": ["ticket_id", "customer_id", "opened_at", "closed_at", "category",
                     "priority", "ticket_status", "channel"],

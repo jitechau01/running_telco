@@ -29,6 +29,8 @@ FILES=(
   "sql/03_curated_layer/tables_curated.sql"
   "sql/08_audit_control/01_control_tables.sql"
   "sql/08_audit_control/02_audit_procedures.sql"
+  "sql/09_validation/01_error_schema_tables.sql"
+  "sql/09_validation/02_sp_validate_raw.sql"
   "sql/04_procedures/01_sp_raw_to_staging.sql"
   "sql/04_procedures/02_sp_staging_to_curated.sql"
   "sql/06_governance/01_tags.sql"

@@ -11,7 +11,7 @@ scheduled independently (e.g. CDR raw+staging hourly via cron, curated left
 entirely to the Snowflake TASKs, or all three as separate Airflow tasks -
 see airflow/dags/running_telco_pipeline_dag.py).
 
-  1. --layer raw     : COPY INTO for each feed's external stage -> RAW table.
+  1. --layer raw      : COPY INTO for each feed's external stage -> RAW table.
                         Captures per-file load results (rows parsed, rows
                         loaded, errors) from Snowflake's own COPY INTO result
                         set into AUDIT_CTL.ETL_RUN_LOG / ETL_ERROR_LOG - so a
@@ -19,14 +19,23 @@ see airflow/dags/running_telco_pipeline_dag.py).
                         column list is built per-feed from FEED_REGISTRY in
                         config.py - each feed's RAW table has a different
                         width, so this is NOT a hardcoded $1..$16 guess.
-  2. --layer staging : CALL STAGING.SP_LOAD_STG_<feed>() per feed (each one
+  2. --layer validate : CALL ERROR_SCHEMA.SP_VALIDATE_RAW_<feed>() per feed -
+                        source-file-vs-table row count reconciliation,
+                        not-null / date-format / accepted-values checks
+                        against the just-landed RAW rows. Rule pass/fail
+                        summary goes to ERROR_SCHEMA.VALIDATION_RUN_SUMMARY,
+                        the actual failing records to
+                        ERROR_SCHEMA.VALIDATION_ERROR_LOG - see
+                        sql/09_validation/. Observability only: a failed
+                        validation rule does not block staging from running.
+  3. --layer staging  : CALL STAGING.SP_LOAD_STG_<feed>() per feed (each one
                         does its own internal audit logging via
                         SP_AUDIT_START/END/FAIL - see sql/08_audit_control).
-  3. --layer curated  : CALL CURATED.SP_MERGE_* for all 8 dims/facts (no
+  4. --layer curated  : CALL CURATED.SP_MERGE_* for all 8 dims/facts (no
                         --feeds - always runs the full set).
-  4. --layer all      : runs 1 -> 2 -> 3 in sequence, for local/manual testing
-                        only. In production, prefer separate scheduled
-                        invocations per layer over this.
+  5. --layer all      : runs 1 -> 2 -> 3 -> 4 in sequence, for local/manual
+                        testing only. In production, prefer separate
+                        scheduled invocations per layer over this.
 
 Every step retries transient failures with exponential backoff, and a failed
 feed/proc is logged to ETL_ERROR_LOG and does not block the rest. At the end,
@@ -35,6 +44,7 @@ VW_OPEN_ERRORS.
 
 Usage:
     python snowflake_orchestrator.py --layer raw --feeds customers,plans,billing
+    python snowflake_orchestrator.py --layer validate --feeds all
     python snowflake_orchestrator.py --layer staging --feeds all
     python snowflake_orchestrator.py --layer curated
     python snowflake_orchestrator.py --layer all --feeds all
@@ -182,6 +192,21 @@ class SnowflakeOrchestrator:
             log.error(f"[{feed}] COPY INTO FAILED: {e}")
             return {"feed": feed, "status": "FAILED", "error": str(e)}
 
+    def validate_raw_feed(self, feed: str) -> dict:
+        meta = FEED_REGISTRY[feed]
+        try:
+            cur = self._execute_with_retry(f"CALL {meta['validate_proc']}()")
+            result = cur.fetchone()
+            log.info(f"[{feed}] {meta['validate_proc']} -> {result}")
+            return {"feed": feed, "status": "SUCCESS", "result": str(result)}
+        except Exception as e:
+            # The procedure logs its own failure via SP_AUDIT_FAIL internally
+            # (a SQL error in the validation proc itself, not a validation
+            # rule failing - a rule failing is a normal SUCCESS-with-violations
+            # result, logged to ERROR_SCHEMA, not an exception here).
+            log.error(f"[{feed}] {meta['validate_proc']} FAILED: {e}")
+            return {"feed": feed, "status": "FAILED", "error": str(e)}
+
     def call_staging_procedure(self, feed: str) -> dict:
         meta = FEED_REGISTRY[feed]
         try:
@@ -282,17 +307,19 @@ def main():
                      "auto-chains: running --layer raw does NOT also run staging."
     )
     ap.add_argument(
-        "--layer", required=True, choices=["raw", "staging", "curated", "all"],
+        "--layer", required=True, choices=["raw", "validate", "staging", "curated", "all"],
         help="Which layer to run: "
              "'raw' = S3 -> RAW (COPY INTO per feed's stage), "
+             "'validate' = RAW layer data quality checks (CALL ERROR_SCHEMA.SP_VALIDATE_RAW_* per "
+             "feed - row count reconciliation, not-null, date format, accepted values), "
              "'staging' = RAW -> STAGING (CALL SP_LOAD_STG_* per feed), "
              "'curated' = STAGING -> CURATED (CALL SP_MERGE_* - no --feeds, runs all 8), "
-             "'all' = run raw, then staging, then curated in sequence (convenience "
+             "'all' = run raw, then validate, then staging, then curated in sequence (convenience "
              "for local testing only - in production these should be separate "
              "scheduled invocations, e.g. separate Airflow tasks/cron entries)."
     )
     ap.add_argument("--feeds", default="all",
-                     help="comma separated feed names or 'all' - applies to --layer raw|staging, ignored for curated")
+                     help="comma separated feed names or 'all' - applies to --layer raw|validate|staging, ignored for curated")
     args = ap.parse_args()
 
     feeds = list(FEED_REGISTRY.keys()) if args.feeds == "all" else args.feeds.split(",")
@@ -307,6 +334,12 @@ def main():
             for feed in feeds:
                 log.info(f"--- Processing feed: {feed} ---")
                 outcomes.append(orch.load_raw_feed(feed))
+
+        if args.layer in ("validate", "all"):
+            log.info(f"=== LAYER: validate (RAW quality checks) - feeds: {', '.join(feeds)} ===")
+            for feed in feeds:
+                log.info(f"--- Validating feed: {feed} ---")
+                outcomes.append(orch.validate_raw_feed(feed))
 
         if args.layer in ("staging", "all"):
             log.info(f"=== LAYER: staging (RAW -> STAGING) - feeds: {', '.join(feeds)} ===")

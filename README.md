@@ -31,9 +31,11 @@ running-telco-snowflake-aws/
 │   ├── 05_tasks/                TASK DAG (all tasks live in ORCHESTRATION schema - see note below)
 │   ├── 06_governance/           TAGS, column MASKING POLICIES, ROW ACCESS POLICY, grants
 │   ├── 07_data_sharing/         secure views + outbound SHARE to an external partner account
-│   └── 08_audit_control/        AUDIT_CTL schema: job master, run log, error log, DQ log, audit procedures
+│   ├── 08_audit_control/        AUDIT_CTL schema: job master, run log, error log, DQ log, audit procedures
+│   └── 09_validation/           ERROR_SCHEMA: RAW-layer data quality validation (row count
+│                                 reconciliation, not-null, date format, accepted values) - see section 4.1
 ├── sql_consolidated/
-│   └── deploy_all.sql           all 16 files above, concatenated into one script with section
+│   └── deploy_all.sql           all 18 files above, concatenated into one script with section
 │                                 markers - includes the "no ACCOUNTADMIN" deployment pattern
 │                                 (see section 9 below). Useful for one-shot deploys or environments
 │                                 like the one this variant was built for.
@@ -87,6 +89,7 @@ customer per billing period — the main BI-facing view.
 | RBAC (7 functional roles, with full `CREATE <object>` grants) | `sql/00_setup/02_warehouses_roles.sql` |
 | Secure Data Sharing (outbound `SHARE`) | `sql/07_data_sharing/01_secure_views_and_share.sql` |
 | Audit & Control framework | `sql/08_audit_control/` + `python/orchestration/` |
+| RAW layer data quality validation (`ERROR_SCHEMA`) | `sql/09_validation/` + `python/orchestration/` |
 | Orchestration (Airflow) | `airflow/dags/running_telco_pipeline_dag.py` |
 
 ## 4. The Audit & Control framework
@@ -121,6 +124,57 @@ EXCEPTION
     RAISE;
 ```
 
+## 4.1 RAW layer validation (`ERROR_SCHEMA`)
+
+Runs right after RAW load, before STAGING load - `sql/09_validation/` (deployed
+as files 9-10 of 18; `deploy.sh` and `sql_consolidated/deploy_all.sql` both
+place it right after `08_audit_control`). One `ERROR_SCHEMA.SP_VALIDATE_RAW_<feed>()`
+procedure per feed, same shape as `STAGING.SP_LOAD_STG_<feed>()`, checking:
+
+- **Row count reconciliation** - for every source file already landed in a
+  RAW table, re-counts the same file directly off the external stage
+  (`SELECT COUNT(*) FROM @stage/<file> (FILE_FORMAT => ...)`, relying on
+  `PURGE = FALSE`) and compares to the row count landed in the RAW table for
+  that file → `ERROR_SCHEMA.SRC_TARGET_COUNT_LOG`.
+- **Not-null validation** on every column already treated as a required key
+  elsewhere in the pipeline (customer_id, plan_id, cdr_id, invoice_id, etc).
+- **Date/timestamp format validation** on every date-like column, using the
+  same `TRY_TO_DATE` / `TRY_TO_TIMESTAMP_NTZ` the STAGING load procedures use
+  - so a value that would silently become `NULL` downstream is instead
+  caught and logged with the original string.
+- **Accepted values validation** on every enum-like column (`account_status`,
+  `call_type`, `payment_status`, `region`, ...) against the domain the
+  synthetic source system produces (see `generate_telecom_data.py`) - edit
+  the `IN (...)` lists in `02_sp_validate_raw.sql` for your real domain.
+
+Every failing **rule** (pass/fail counts) goes to
+`ERROR_SCHEMA.VALIDATION_RUN_SUMMARY`; every failing **record** (the full RAW
+row as VARIANT, for triage/reprocessing) goes to
+`ERROR_SCHEMA.VALIDATION_ERROR_LOG`. Validation is observability, not a gate
+- it doesn't block or delete anything in RAW, and `SP_LOAD_STG_*` keeps doing
+its own independent defensive filtering exactly as before. Query:
+
+```sql
+SELECT * FROM ERROR_SCHEMA.VW_VALIDATION_SUMMARY_TODAY;
+SELECT * FROM ERROR_SCHEMA.VW_OPEN_VALIDATION_ERRORS;
+SELECT * FROM ERROR_SCHEMA.VW_COUNT_RECONCILIATION_MISMATCHES;
+```
+
+Run it standalone (`CALL ERROR_SCHEMA.SP_VALIDATE_RAW_CUSTOMERS();`) or via
+the orchestrator's own layer, right after `raw`:
+
+```bash
+python orchestration/snowflake_orchestrator.py --layer raw      --feeds all
+python orchestration/snowflake_orchestrator.py --layer validate --feeds all
+python orchestration/snowflake_orchestrator.py --layer staging  --feeds all
+```
+
+`ERROR_SCHEMA.VALIDATION_RULE_REGISTRY` is a human-readable reference of every
+rule enforced - it documents the rules, it does not drive them (the checks
+are plain SQL in `02_sp_validate_raw.sql`, matching how every other procedure
+in this repo is written, not a dynamic rule engine). Keep the two in sync by
+hand when you add or change a rule.
+
 ## 5. Deployment
 
 ### Prereqs
@@ -143,9 +197,10 @@ chmod +x deploy.sh
 This runs, in order: databases/schemas → warehouses/RBAC (including the
 `CREATE <object>` grants each role needs, not just `USAGE`) → file
 formats/stages → RAW tables → Snowpipe → STAGING tables/streams → CURATED
-tables → AUDIT_CTL → audit procedures → load/merge procedures → governance
-(tags/masking/row policy) → data sharing → tasks (created suspended, then
-resumed at the end of the script). `deploy.sh` runs every file with
+tables → AUDIT_CTL → audit procedures → ERROR_SCHEMA tables → RAW validation
+procedures → load/merge procedures → governance (tags/masking/row policy) →
+data sharing → tasks (created suspended, then resumed at the end of the
+script). `deploy.sh` runs every file with
 `-o echo=true`, so if any statement fails, the SQL text printed immediately
 before the error tells you exactly which statement it was.
 
@@ -192,13 +247,14 @@ cp .env.example .env   # fill in your Snowflake/AWS credentials
 python ingestion/generate_telecom_data.py --out ./data_out --customers 5000 --cdr-per-day 20000 --days 3
 python ingestion/upload_to_s3.py --local-dir ./data_out --bucket running-telco-raw
 
-# The three layers are independent invocations - nothing auto-chains between
+# The four layers are independent invocations - nothing auto-chains between
 # them, matching how the Snowflake TASK DAG separates raw/staging/curated.
-python orchestration/snowflake_orchestrator.py --layer raw     --feeds all
-python orchestration/snowflake_orchestrator.py --layer staging --feeds all
+python orchestration/snowflake_orchestrator.py --layer raw      --feeds all
+python orchestration/snowflake_orchestrator.py --layer validate --feeds all
+python orchestration/snowflake_orchestrator.py --layer staging  --feeds all
 python orchestration/snowflake_orchestrator.py --layer curated
 
-# Convenience for local/manual testing only - runs all three layers in one
+# Convenience for local/manual testing only - runs all four layers in one
 # process, in order. In production, schedule each layer separately instead
 # (e.g. separate Airflow tasks/cron entries per layer, or leave curated to
 # the Snowflake TASKs entirely - see Step 5).
@@ -243,6 +299,12 @@ SELECT * FROM AUDIT_CTL.VW_DAILY_RUN_STATS WHERE run_date = CURRENT_DATE();
 
 -- Anything broken and unresolved?
 SELECT * FROM AUDIT_CTL.VW_OPEN_ERRORS;
+
+-- RAW layer data quality - today's rule pass/fail counts, open record-level
+-- failures, and any source-file-vs-table count mismatches (see section 4.1)
+SELECT * FROM ERROR_SCHEMA.VW_VALIDATION_SUMMARY_TODAY;
+SELECT * FROM ERROR_SCHEMA.VW_OPEN_VALIDATION_ERRORS;
+SELECT * FROM ERROR_SCHEMA.VW_COUNT_RECONCILIATION_MISMATCHES;
 
 -- Snowflake's own task run history
 SELECT * FROM TABLE(INFORMATION_SCHEMA.TASK_HISTORY())
