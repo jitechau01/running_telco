@@ -52,7 +52,7 @@ CREATE STORAGE INTEGRATION IF NOT EXISTS S3_RUNNINGTELCO_INT
 
 -- DESC INTEGRATION S3_RUNNINGTELCO_INT;  -- copy STORAGE_AWS_IAM_USER_ARN + STORAGE_AWS_EXTERNAL_ID into AWS trust policy
 
-grant usage on integrantion S3_RUNNINGTELCO_INT to role R_DATA_ENGINEER;
+grant usage on integration S3_RUNNINGTELCO_INT to role R_DATA_ENGINEER;
 
 /* ==========================================================================
    EXTERNAL STAGES
